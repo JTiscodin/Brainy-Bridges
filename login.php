@@ -1,12 +1,11 @@
 <?php
+session_start();
 include ("./config/db_connect.php");
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $username = $_POST["username"];
     $email = $_POST["email"];
     $password = password_hash($_POST["password"], PASSWORD_DEFAULT);
-    $msg;
-
     $sql = "SELECT * FROM users WHERE username = ? OR email = ?";
     $stmt = mysqli_prepare($conn, $sql);
     mysqli_stmt_bind_param($stmt, "ss", $username, $email);
@@ -21,8 +20,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         mysqli_stmt_bind_param($stmt, "sss", $username, $email, $password);
 
         if (mysqli_stmt_execute($stmt)) {
-            $msg = "User registered successfully!";
             header("Location: quizzes.php");
+            $_SESSION['user_id'] = $email;
+            $_SESSION['username'] = $username;
+            header("Location: allquizzes.php");
             exit();
         } else {
             $msg = "Error registering user: " . mysqli_error($conn);

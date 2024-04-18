@@ -1,7 +1,9 @@
 <?php
+session_start();
 include("./config/db_connect.php");
 
 $subject_id = isset($_GET['subject']) ? $_GET['subject'] : null;
+
 if ($subject_id !== null) {
     // Fetch questions for the selected subject
     $sql = "SELECT * FROM questions WHERE subject_id = ?";
@@ -57,31 +59,59 @@ if ($subject_id !== null) {
             <p>Percentage: <span id="percentage"></span>%</p>
         </div>
     </div>
-
     <script>
-        document.getElementById('quiz-form').addEventListener('submit', function(event) {
-            event.preventDefault(); // Prevent the form from submitting
-
-            let score = 0;
-            let totalMarks = 0;
-            const form = event.target;
-            const formData = new FormData(form);
-
-            for (const [key, value] of formData.entries()) {
-                totalMarks += 4;
-                if (value === '<?php echo $question['correct_answer']; ?>') {
-                    score += 4;
-                }
-                console.log(score,totalMarks)
+    document.getElementById('quiz-form').addEventListener('submit', function(event) {
+        event.preventDefault(); // Prevent the form from submitting
+        let score = 0;
+        let totalMarks = 0;
+        const form = event.target;
+        const formData = new FormData(form);
+        
+        // Loop over questions array to retrieve correct answers
+        <?php foreach ($questions as $question): ?>
+            const correctAnswer<?php echo $question['id']; ?> = '<?php echo $question['correct_answer']; ?>';
+        <?php endforeach; ?>
+        
+        for (const [key, value] of formData.entries()) {
+            totalMarks += 4;
+            
+            // Retrieve correct answer for the current question
+            const correctAnswer = correctAnswer[key];
+            
+            // Check if selected answer matches the correct answer
+            if (value === correctAnswer) {
+                score += 4;
             }
+            console.log(score, totalMarks);
+        }
+        const percentage = (score / totalMarks) * 100;
+        document.getElementById('score').textContent = score;
+        document.getElementById('total').textContent = totalMarks;
+        document.getElementById('percentage').textContent = percentage.toFixed(2);
+        document.getElementById('result-container').style.display = 'block';
 
-            const percentage = (score / totalMarks) * 100;
-
-            document.getElementById('score').textContent = score;
-            document.getElementById('total').textContent = totalMarks;
-            document.getElementById('percentage').textContent = percentage.toFixed(2);
-            document.getElementById('result-container').style.display = 'block';
+        // Save the results to the database
+        fetch('save_results.php', {
+            method: 'POST',
+            headers: {  
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                user_id: '<?php echo $_SESSION["user_id"]; ?>',
+                score: score,
+                total_marks: totalMarks,
+                percentage: percentage.toFixed(2)
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Results saved:', data);
+        })
+        .catch(error => {
+            console.error('Error saving results:', error);
         });
-    </script>
+    });
+</script>
+
 </body>
 </html>

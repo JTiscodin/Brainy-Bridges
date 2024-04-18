@@ -1,4 +1,8 @@
-<?php include("./config/db_connect.php"); ?>
+<?php include("./config/db_connect.php"); 
+  include("auth.php");
+  requireAuthentication();
+
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
